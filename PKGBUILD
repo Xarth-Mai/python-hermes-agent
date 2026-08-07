@@ -53,9 +53,13 @@ sha256sums=('370542c7219faba6300905c3b419e14e6508a31ac698a1a5174e0386990834be'
 
 prepare() {
   cd "${srcdir}/hermes-agent-${tag}"
-  # Arch Linux currently ships newer setuptools than upstream's build cap.
-  # The package builds with the distro setuptools, so relax the upper bound.
-  sed -i 's/setuptools>=77.0,<83/setuptools>=77.0/' pyproject.toml
+  # Arch Linux packaging uses distro setuptools.
+  # Relax upstream's setuptools pin so the package can build with
+  # the current Arch Python toolchain.
+  sed -i \
+    -e 's/setuptools>=77.0,<83/setuptools>=77.0/' \
+    -e 's/setuptools==83.0.0/setuptools>=77.0/' \
+    pyproject.toml
   # Python 3.14: ThreadPoolExecutor no longer has _initializer/_initargs
   patch -p1 < "${srcdir}/0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
 }

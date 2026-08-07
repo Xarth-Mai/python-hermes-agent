@@ -3,9 +3,9 @@
 
 _pkgname=hermes-agent
 pkgname=python-${_pkgname}
-tag=2026.7.30
-pkgver=0.19.1
-pkgrel=2
+tag=2026.8.3
+pkgver=0.20.0
+pkgrel=1
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
@@ -47,9 +47,9 @@ source=(
     "0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
     "hermes-wrapper"
 )
-sha256sums=('1932d0fca3f2c5288c909f26f03738712083b14749d6855482d24af41feea7e2'
+sha256sums=('370542c7219faba6300905c3b419e14e6508a31ac698a1a5174e0386990834be'
             '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
-            '550994e4daeb17340e02c642d68de70a3665a7ab706f2f34daabccbc7fda38d0')
+            '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9')
 
 prepare() {
   cd "${srcdir}/hermes-agent-${tag}"
@@ -63,11 +63,15 @@ prepare() {
 build() {
   cd "${srcdir}/hermes-agent-${tag}"
 
-  HERMES_NIX_BUILD=1 python -m build --wheel --no-isolation
+  # Upstream blocks normal wheel builds because runtime assets are not included.
+  # We package those assets separately below, matching the upstream Nix layout.
+  HERMES_NIX_BUILD=1 python -m build --wheel --no-isolation --quiet
 
+  # Build the dashboard and TUI from the upstream npm workspaces.
+  # The dashboard outputs to hermes_cli/web_dist via vite.config.ts.
   npm ci --silent --no-fund --no-audit --progress=false
-  npm run build --workspace web
-  npm run build --workspace ui-tui
+  npm run --silent build --workspace web
+  npm run --silent build --workspace ui-tui
 }
 
 package() {
@@ -79,9 +83,14 @@ package() {
 
   install -d "${_share}"
 
+  # Runtime assets intentionally omitted from the Python wheel.
+  # Keep them under /usr/share and expose them through HERMES_* in the wrapper.
   cp -r plugins "${_share}/plugins"
   cp -r locales "${_share}/locales"
   cp -r optional-mcps "${_share}/optional-mcps"
+
+  # Bundled skills and optional-skills are intentionally not packaged.
+  # Users can manage skills separately through Hermes' skill management.
 
   find "${_share}" -type d -name '__pycache__' -prune -exec rm -rf '{}' +
   find "${_share}" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
@@ -94,6 +103,8 @@ package() {
 
   install -d "${pkgdir}/usr/lib/hermes-agent"
 
+  # Preserve the wheel-generated console scripts and wrap them with
+  # the runtime environment required by the split asset layout.
   local _cmd
   for _cmd in hermes hermes-agent hermes-acp; do
       if [[ -f "${pkgdir}/usr/bin/${_cmd}" ]]; then

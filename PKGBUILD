@@ -5,7 +5,7 @@ _pkgname=hermes-agent
 pkgname=python-${_pkgname}
 tag=2026.8.3
 pkgver=0.20.0
-pkgrel=1
+pkgrel=3
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
@@ -45,10 +45,14 @@ options=('!strip' '!debug')
 source=(
     "${url}/archive/refs/tags/v${tag}.tar.gz"
     "0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
+    "0002-use-hermes-wrapper-for-systemd-gateway.patch"
+    "0003-fix-systemd-virtualenv-for-arch-package.patch"
     "hermes-wrapper"
 )
 sha256sums=('370542c7219faba6300905c3b419e14e6508a31ac698a1a5174e0386990834be'
             '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
+            '6027be55aff07d1950fa9d942d7da48fca00434d3c38d0d95af0d4f7699d3ab2'
+            '0a92b4ae04655681b0b7bcc90418ed94033699a1673e813ddb1e18d4462f034d'
             '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9')
 
 prepare() {
@@ -62,6 +66,11 @@ prepare() {
     pyproject.toml
   # Python 3.14: ThreadPoolExecutor no longer has _initializer/_initargs
   patch -p1 < "${srcdir}/0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
+  # Use the packaged hermes wrapper for generated systemd units.
+  # This preserves HERMES_* runtime asset environment variables.
+  patch -p1 < "${srcdir}/0002-use-hermes-wrapper-for-systemd-gateway.patch"
+  # Do not emit a fake VIRTUAL_ENV for non-venv (Arch system Python) installs.
+  patch -p1 < "${srcdir}/0003-fix-systemd-virtualenv-for-arch-package.patch"
 }
 
 build() {

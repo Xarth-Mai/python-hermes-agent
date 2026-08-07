@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Point Hermes at runtime assets installed outside site-packages.
+export HERMES_BUNDLED_PLUGINS=/usr/share/hermes-agent/plugins
+export HERMES_BUNDLED_LOCALES=/usr/share/hermes-agent/locales
+export HERMES_OPTIONAL_MCPS=/usr/share/hermes-agent/optional-mcps
+
+# Use the prebuilt dashboard and TUI instead of rebuilding at runtime.
+export HERMES_WEB_DIST=/usr/share/hermes-agent/web_dist
+export HERMES_TUI_DIR=/usr/lib/hermes-agent/ui-tui
+
+export HERMES_PYTHON=/usr/bin/python
+export HERMES_NODE=/usr/bin/node
+
+name=${0##*/}
+real="/usr/lib/hermes-agent/${name}.real"
+
+if [ ! -x "$real" ]; then
+    echo "hermes-agent: missing executable: $real" >&2
+    exit 127
+fi
+
+exec "$real" "$@"

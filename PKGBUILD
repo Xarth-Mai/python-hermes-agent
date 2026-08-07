@@ -5,7 +5,7 @@ _pkgname=hermes-agent
 pkgname=python-${_pkgname}
 tag=2026.7.30
 pkgver=0.19.1
-pkgrel=1
+pkgrel=2
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
@@ -40,16 +40,16 @@ optdepends=('python-telegram-bot: Telegram messaging support'
             'python-aiohttp-socks: SOCKS proxy for Matrix'
             'python-defusedxml: XML hardening for WeCom')
 makedepends=('python-installer' 'python-wheel' 'python-build' 'python-setuptools' 'nodejs' 'npm')
-# Binary is a self-contained Bun executable with embedded JS/resources - stripping breaks it
+# Bun / JS bundles and generated assets should not be stripped.
 options=('!strip' '!debug')
 source=(
     "${url}/archive/refs/tags/v${tag}.tar.gz"
     "0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
+    "hermes-wrapper"
 )
-sha256sums=(
-    '1932d0fca3f2c5288c909f26f03738712083b14749d6855482d24af41feea7e2'
-    '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
-)
+sha256sums=('1932d0fca3f2c5288c909f26f03738712083b14749d6855482d24af41feea7e2'
+            '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
+            '550994e4daeb17340e02c642d68de70a3665a7ab706f2f34daabccbc7fda38d0')
 
 prepare() {
   cd "${srcdir}/hermes-agent-${tag}"
@@ -60,16 +60,54 @@ prepare() {
   patch -p1 < "${srcdir}/0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
 }
 
+build() {
+  cd "${srcdir}/hermes-agent-${tag}"
+
+  HERMES_NIX_BUILD=1 python -m build --wheel --no-isolation
+
+  npm ci --silent --no-fund --no-audit --progress=false
+  npm run build --workspace web
+  npm run build --workspace ui-tui
+}
+
 package() {
   cd "${srcdir}/hermes-agent-${tag}"
-  python -m build --quiet --wheel --no-isolation
+
   python -m installer --destdir="${pkgdir}" dist/*.whl
 
-  # Pre-build TUI frontend in $srcdir, then place dist/entry.js under hermes_cli/tui_dist/
-  cd "${srcdir}/hermes-agent-${tag}/ui-tui"
-  npm ci --silent --no-fund --no-audit --progress=false
-  npm run build
+  local _share="${pkgdir}/usr/share/hermes-agent"
 
-  _pyver=$(python -c 'import sys; print(f"python{sys.version_info.major}.{sys.version_info.minor}")')
-  install -Dm644 dist/entry.js "${pkgdir}/usr/lib/${_pyver}/site-packages/hermes_cli/tui_dist/entry.js"
+  install -d "${_share}"
+
+  cp -r plugins "${_share}/plugins"
+  cp -r locales "${_share}/locales"
+  cp -r optional-mcps "${_share}/optional-mcps"
+
+  find "${_share}" -type d -name '__pycache__' -prune -exec rm -rf '{}' +
+  find "${_share}" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+
+  test -f hermes_cli/web_dist/index.html
+  cp -r hermes_cli/web_dist "${_share}/web_dist"
+
+  test -f ui-tui/dist/entry.js
+  install -Dm644 ui-tui/dist/entry.js "${pkgdir}/usr/lib/hermes-agent/ui-tui/dist/entry.js"
+
+  install -d "${pkgdir}/usr/lib/hermes-agent"
+
+  local _cmd
+  for _cmd in hermes hermes-agent hermes-acp; do
+      if [[ -f "${pkgdir}/usr/bin/${_cmd}" ]]; then
+          mv "${pkgdir}/usr/bin/${_cmd}" "${pkgdir}/usr/lib/hermes-agent/${_cmd}.real"
+          ln -s /usr/lib/hermes-agent/hermes-wrapper "${pkgdir}/usr/bin/${_cmd}"
+      fi
+  done
+
+  install -Dm755 "${srcdir}/hermes-wrapper" "${pkgdir}/usr/lib/hermes-agent/hermes-wrapper"
+
+  # Packaging sanity checks.
+  test -f "${_share}/plugins/platforms/wecom/plugin.yaml"
+  test -d "${_share}/locales"
+  test -d "${_share}/optional-mcps"
+  test -f "${_share}/web_dist/index.html"
+  test -f "${pkgdir}/usr/lib/hermes-agent/ui-tui/dist/entry.js"
 }

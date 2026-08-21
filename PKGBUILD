@@ -3,9 +3,9 @@
 
 _pkgname=hermes-agent
 pkgname=python-${_pkgname}
-tag=2026.8.3
-pkgver=0.20.0
-pkgrel=3
+tag=2026.8.19
+pkgver=0.20.5
+pkgrel=1
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
@@ -16,7 +16,7 @@ depends=('python>=3.11' 'python-dotenv' 'python-prompt_toolkit' 'python-openai' 
           'python-markdown' 'python-pathspec' 'python-ptyprocess'
           'python-certifi' 'python-packaging' 'python-urllib3' 'python-websockets'
           'python-pillow' 'python-multipart' 'python-cryptography'
-          'python-fastapi' 'python-starlette' 'uvicorn')
+          'python-fastapi' 'python-starlette' 'python-croniter' 'uvicorn')
 optdepends=('python-telegram-bot: Telegram messaging support'
             'python-discord: Discord messaging support (PyPI: discord.py)'
             'python-aiohttp: Async HTTP for messaging/web, QQ bot & Wechat messaging needs this'
@@ -28,7 +28,6 @@ optdepends=('python-telegram-bot: Telegram messaging support'
             'python-simple-term-menu: Interactive CLI menu'
             'python-slack-sdk: Slack integration'
             'python-qrcode: QR code generation for auth'
-            'python-croniter: Cron scheduling support (upstream-required, AUR)'
             'python-exa-py: Exa web search backend'
             'python-firecrawl-py: Firecrawl web search backend'
             'python-fal-client: Fal image generation backend'
@@ -49,7 +48,7 @@ source=(
     "0003-fix-systemd-virtualenv-for-arch-package.patch"
     "hermes-wrapper"
 )
-sha256sums=('370542c7219faba6300905c3b419e14e6508a31ac698a1a5174e0386990834be'
+sha256sums=('8e7f7d2aa6be48ae8b5550325be44aef339413ceec6ed74c18287001103de8fd'
             '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
             '6027be55aff07d1950fa9d942d7da48fca00434d3c38d0d95af0d4f7699d3ab2'
             '0a92b4ae04655681b0b7bcc90418ed94033699a1673e813ddb1e18d4462f034d'

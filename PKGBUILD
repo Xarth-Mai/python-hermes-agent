@@ -89,7 +89,7 @@ build() {
 package() {
   cd "${srcdir}/hermes-agent-${tag}"
 
-  python -m installer --destdir="${pkgdir}" dist/*.whl
+  python -m installer --prefix="${pkgdir}/usr" dist/*.whl
 
   local _share="${pkgdir}/usr/share/hermes-agent"
 

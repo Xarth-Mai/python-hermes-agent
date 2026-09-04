@@ -3,8 +3,8 @@
 
 _pkgname=hermes-agent
 pkgname=python-${_pkgname}
-tag=2026.8.19
-pkgver=0.20.5
+tag=2026.8.31
+pkgver=0.21.0
 pkgrel=1
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
@@ -13,7 +13,7 @@ license=('MIT')
 depends=('python>=3.11' 'python-dotenv' 'python-prompt_toolkit' 'python-openai' 'python-fire'
           'python-ruamel-yaml' 'python-rich' 'python-pyjwt' 'python-tenacity' 'python-yaml'
           'python-httpx' 'python-requests' 'python-jinja' 'python-pydantic' 'python-psutil'
-          'python-markdown' 'python-pathspec' 'python-ptyprocess'
+          'python-markdown' 'python-pathspec' 'python-ptyprocess' 'python-snowballstemmer'
           'python-certifi' 'python-packaging' 'python-urllib3' 'python-websockets'
           'python-pillow' 'python-multipart' 'python-cryptography'
           'python-fastapi' 'python-starlette' 'python-croniter' 'uvicorn')
@@ -48,7 +48,7 @@ source=(
     "0003-fix-systemd-virtualenv-for-arch-package.patch"
     "hermes-wrapper"
 )
-sha256sums=('8e7f7d2aa6be48ae8b5550325be44aef339413ceec6ed74c18287001103de8fd'
+sha256sums=('78fb3ff707ec1d17044b875ecac8bef28aa39d44242824f6871ca40afe7bf217'
             '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
             '6027be55aff07d1950fa9d942d7da48fca00434d3c38d0d95af0d4f7699d3ab2'
             '0a92b4ae04655681b0b7bcc90418ed94033699a1673e813ddb1e18d4462f034d'
@@ -81,7 +81,8 @@ build() {
 
   # Build the dashboard and TUI from the upstream npm workspaces.
   # The dashboard outputs to hermes_cli/web_dist via vite.config.ts.
-  npm ci --silent --no-fund --no-audit --progress=false
+  npm ci --workspace web --workspace ui-tui --include-workspace-root \
+    --silent --no-fund --no-audit --progress=false
   npm run --silent build --workspace web
   npm run --silent build --workspace ui-tui
 }

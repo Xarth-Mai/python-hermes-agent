@@ -5,14 +5,14 @@ _pkgname=hermes-agent
 pkgname=python-${_pkgname}
 tag=2026.8.31
 pkgver=0.21.0
-pkgrel=1
+pkgrel=2
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
 license=('MIT')
-depends=('python>=3.11' 'python-dotenv' 'python-prompt_toolkit' 'python-openai' 'python-fire'
+depends=('nodejs' 'python>=3.11' 'python-dotenv' 'python-prompt_toolkit' 'python-openai' 'python-fire'
           'python-ruamel-yaml' 'python-rich' 'python-pyjwt' 'python-tenacity' 'python-yaml'
-          'python-httpx' 'python-requests' 'python-jinja' 'python-pydantic' 'python-psutil'
+          'python-httpx' 'python-socksio' 'python-requests' 'python-jinja' 'python-pydantic' 'python-psutil'
           'python-markdown' 'python-pathspec' 'python-ptyprocess' 'python-snowballstemmer'
           'python-certifi' 'python-packaging' 'python-urllib3' 'python-websockets'
           'python-pillow' 'python-multipart' 'python-cryptography'
@@ -38,7 +38,7 @@ optdepends=('python-telegram-bot: Telegram messaging support'
             'python-asyncpg: PostgreSQL async for Matrix'
             'python-aiohttp-socks: SOCKS proxy for Matrix'
             'python-defusedxml: XML hardening for WeCom')
-makedepends=('python-installer' 'python-wheel' 'python-build' 'python-setuptools' 'nodejs' 'npm')
+makedepends=('python-installer' 'python-wheel' 'python-build' 'python-setuptools' 'npm')
 # Bun / JS bundles and generated assets should not be stripped.
 options=('!strip' '!debug')
 source=(
@@ -47,12 +47,14 @@ source=(
     "0002-use-hermes-wrapper-for-systemd-gateway.patch"
     "0003-fix-systemd-virtualenv-for-arch-package.patch"
     "hermes-wrapper"
+    "check-package.py"
 )
 sha256sums=('78fb3ff707ec1d17044b875ecac8bef28aa39d44242824f6871ca40afe7bf217'
             '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
             '6027be55aff07d1950fa9d942d7da48fca00434d3c38d0d95af0d4f7699d3ab2'
-            '0a92b4ae04655681b0b7bcc90418ed94033699a1673e813ddb1e18d4462f034d'
-            '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9')
+            'c2c2a16a2528e4ac194b9e3a0eea09860e93dcf96bd627f09b73f0d7a3ec1f68'
+            '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9'
+            '910cabe2cc77ca42a73a7a9d98cc1b1406bffa2206b612854531da88c86f1c69')
 
 prepare() {
   cd "${srcdir}/hermes-agent-${tag}"
@@ -87,10 +89,17 @@ build() {
   npm run --silent build --workspace ui-tui
 }
 
+check() {
+  cd "${srcdir}/hermes-agent-${tag}"
+  PYTHONPATH=. python "${srcdir}/check-package.py"
+}
+
 package() {
   cd "${srcdir}/hermes-agent-${tag}"
 
-  python -m installer --prefix="${pkgdir}/usr" dist/*.whl
+  python -m installer --destdir="${pkgdir}" --prefix=/usr dist/*.whl
+
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 
   local _share="${pkgdir}/usr/share/hermes-agent"
 
@@ -113,6 +122,7 @@ package() {
 
   test -f ui-tui/dist/entry.js
   install -Dm644 ui-tui/dist/entry.js "${pkgdir}/usr/lib/hermes-agent/ui-tui/dist/entry.js"
+  install -Dm644 ui-tui/package.json "${pkgdir}/usr/lib/hermes-agent/ui-tui/package.json"
 
   install -d "${pkgdir}/usr/lib/hermes-agent"
 
@@ -120,10 +130,9 @@ package() {
   # the runtime environment required by the split asset layout.
   local _cmd
   for _cmd in hermes hermes-agent hermes-acp; do
-      if [[ -f "${pkgdir}/usr/bin/${_cmd}" ]]; then
-          mv "${pkgdir}/usr/bin/${_cmd}" "${pkgdir}/usr/lib/hermes-agent/${_cmd}.real"
-          ln -s /usr/lib/hermes-agent/hermes-wrapper "${pkgdir}/usr/bin/${_cmd}"
-      fi
+      test -x "${pkgdir}/usr/bin/${_cmd}"
+      mv "${pkgdir}/usr/bin/${_cmd}" "${pkgdir}/usr/lib/hermes-agent/${_cmd}.real"
+      ln -s /usr/lib/hermes-agent/hermes-wrapper "${pkgdir}/usr/bin/${_cmd}"
   done
 
   install -Dm755 "${srcdir}/hermes-wrapper" "${pkgdir}/usr/lib/hermes-agent/hermes-wrapper"
@@ -134,4 +143,5 @@ package() {
   test -d "${_share}/optional-mcps"
   test -f "${_share}/web_dist/index.html"
   test -f "${pkgdir}/usr/lib/hermes-agent/ui-tui/dist/entry.js"
+  node --check "${pkgdir}/usr/lib/hermes-agent/ui-tui/dist/entry.js"
 }

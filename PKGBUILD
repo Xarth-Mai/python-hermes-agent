@@ -3,9 +3,9 @@
 
 _pkgname=hermes-agent
 pkgname=python-${_pkgname}
-tag=2026.8.31
-pkgver=0.21.0
-pkgrel=2
+tag=2026.9.14
+pkgver=0.21.3
+pkgrel=1
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
@@ -15,7 +15,7 @@ depends=('nodejs' 'python>=3.11' 'python-dotenv' 'python-prompt_toolkit' 'python
           'python-httpx' 'python-socksio' 'python-requests' 'python-jinja' 'python-pydantic' 'python-psutil'
           'python-markdown' 'python-pathspec' 'python-ptyprocess' 'python-snowballstemmer'
           'python-certifi' 'python-packaging' 'python-urllib3' 'python-websockets'
-          'python-pillow' 'python-multipart' 'python-cryptography'
+          'python-pillow' 'python-pillow-heif' 'python-multipart' 'python-cryptography'
           'python-fastapi' 'python-starlette' 'python-croniter' 'uvicorn')
 optdepends=('python-telegram-bot: Telegram messaging support'
             'python-discord: Discord messaging support (PyPI: discord.py)'
@@ -49,12 +49,12 @@ source=(
     "hermes-wrapper"
     "check-package.py"
 )
-sha256sums=('78fb3ff707ec1d17044b875ecac8bef28aa39d44242824f6871ca40afe7bf217'
-            '6b3357098d9e70eb33c95e2f7d12c2bdc016f6e7933b517d85f1399d50caea71'
-            '6027be55aff07d1950fa9d942d7da48fca00434d3c38d0d95af0d4f7699d3ab2'
-            'c2c2a16a2528e4ac194b9e3a0eea09860e93dcf96bd627f09b73f0d7a3ec1f68'
+sha256sums=('47df72ebd3f9c96d806a94541163f7fe7d7ce5b84f85c1d3787e6dfeea1d7834'
+            '359e2f5eb1aee238788fe9275ca2cdad8a4c8e1a8fd5455ea0a2f50bbc49df7e'
+            '6ff0763922e445339478c7ed463c7346eafa6687ba01f52c0c72dc126aa69bbe'
+            'faaba621136b9e7b46c2427ae3c2b7499ec319f96e62b775173013df4c1ab063'
             '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9'
-            '910cabe2cc77ca42a73a7a9d98cc1b1406bffa2206b612854531da88c86f1c69')
+            'ac13d18fce10f4654ad1631a99ba6846087d4892e0f03a6410cb6d84ec05860a')
 
 prepare() {
   cd "${srcdir}/hermes-agent-${tag}"

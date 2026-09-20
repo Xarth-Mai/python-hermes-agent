@@ -53,7 +53,7 @@ with tempfile.TemporaryDirectory(prefix="hermes-package-check-") as tmp:
             )
             os.environ["HERMES_HOME"] = str(home)
             with patch.object(gateway.shutil, "which", return_value="/usr/bin/hermes"), patch.object(
-                gateway, "_system_service_identity", return_value=("service", "service", tmp)
+                gateway, "_system_service_identity", return_value=("service", "service", tmp, 1000)
             ):
                 for system in (False, True):
                     unit = gateway.generate_systemd_unit(system=system, run_as_user="service")

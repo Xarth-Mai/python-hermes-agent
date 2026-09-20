@@ -1,49 +1,29 @@
 --- a/hermes_cli/gateway.py
 +++ b/hermes_cli/gateway.py
-@@ -2836,6 +2836,7 @@
+@@ -2846,8 +2846,17 @@
+     return str(detected_venv) if detected_venv else str(PROJECT_ROOT / "venv")
+
  
++def _systemd_gateway_entrypoint() -> str:
++    """Use the installed wrapper to load packaged runtime assets"""
++    hermes_binary = shutil.which("hermes")
++    if hermes_binary:
++        return shlex.quote(hermes_binary)
++    return f"{shlex.quote(get_python_path())} -m hermes_cli.main"
++
++
  def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) -> str:
      python_path = get_python_path()
 +    gateway_entrypoint = _systemd_gateway_entrypoint()
      working_dir = _stable_service_working_dir()
-     detected_venv = _detect_venv_dir()
-     venv_dir = str(detected_venv) if detected_venv else str(PROJECT_ROOT / "venv")
-@@ -2904,7 +2905,7 @@
- Type={systemd_type}
- {systemd_watchdog_directives}User={username}
- Group={group_name}
--ExecStart={python_path} -m hermes_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run
-+ExecStart={gateway_entrypoint}{f" {profile_arg}" if profile_arg else ""} gateway run
- WorkingDirectory={working_dir}
- Environment="HOME={home_dir}"
- Environment="USER={username}"
-@@ -2945,7 +2946,7 @@
- 
+     venv_dir = _service_venv_dir()
+
+@@ -2913,7 +2922,7 @@
+
  [Service]
  Type={systemd_type}
--{systemd_watchdog_directives}ExecStart={python_path} -m hermes_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run
-+{systemd_watchdog_directives}ExecStart={gateway_entrypoint}{f" {profile_arg}" if profile_arg else ""} gateway run
+-{systemd_watchdog_directives}{identity_lines}ExecStart={python_path} -m hermes_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run
++{systemd_watchdog_directives}{identity_lines}ExecStart={gateway_entrypoint}{f" {profile_arg}" if profile_arg else ""} gateway run
  WorkingDirectory={working_dir}
- Environment="PATH={sane_path}"
+ {env_lines}Environment="PATH={sane_path}"
  Environment="VIRTUAL_ENV={venv_dir}"
-@@ -3987,6 +3988,20 @@
-         cmd.extend(profile_arg.split())
-     cmd.extend(["gateway", "run", "--replace"])
-     return cmd
-+
-+
-+def _systemd_gateway_entrypoint() -> str:
-+    """Return the gateway process command for generated systemd units.
-+
-+    Prefer the installed `hermes` shim (which loads the packaged env via
-+    hermes-wrapper), and only fall back to direct python entrypoint when the
-+    shim is unavailable (e.g. source checkout or non-packaged installs).
-+    """
-+    hermes_binary = shutil.which("hermes")
-+    if hermes_binary:
-+        return shlex.quote(hermes_binary)
-+
-+    return f"{shlex.quote(get_python_path())} -m hermes_cli.main"
- 
- 
- def _spawn_detached_gateway() -> bool:

@@ -1,22 +1,22 @@
---- a/hermes_cli/gateway.py
-+++ b/hermes_cli/gateway.py
-@@ -2858,7 +2858,6 @@
-     python_path = get_python_path()
+--- a/hermes_cli/gateway_service_unit.py
++++ b/hermes_cli/gateway_service_unit.py
+@@ -165,7 +165,6 @@
+     python_path = _gw().get_python_path()
      gateway_entrypoint = _systemd_gateway_entrypoint()
-     working_dir = _stable_service_working_dir()
--    venv_dir = _service_venv_dir()
+     working_dir = _gw()._stable_service_working_dir()
+-    venv_dir = _gw()._service_venv_dir()
  
-     path_entries = _build_service_path_dirs()
+     path_entries = _gw()._build_service_path_dirs()
      if not system:
-@@ -2881,7 +2880,6 @@
+@@ -188,7 +187,6 @@
          # Remap paths under the calling user's home (/root/) to the target user's so the service can read them.
-         python_path = _remap_path_for_user(python_path, home_dir)
-         working_dir = str(hermes_home) if hermes_home else _remap_path_for_user(working_dir, home_dir)
--        venv_dir = _remap_path_for_user(venv_dir, home_dir)
-         path_entries = [_remap_path_for_user(p, home_dir) for p in path_entries]
+         python_path = _gw()._remap_path_for_user(python_path, home_dir)
+         working_dir = str(hermes_home) if hermes_home else _gw()._remap_path_for_user(working_dir, home_dir)
+-        venv_dir = _gw()._remap_path_for_user(venv_dir, home_dir)
+         path_entries = [_gw()._remap_path_for_user(p, home_dir) for p in path_entries]
          # Managed Node for the TARGET user's tree, prepended so it outranks remapped shell-PATH entries.
          _target_node_entries: list[str] = []
-@@ -2925,7 +2923,6 @@
+@@ -233,7 +231,6 @@
  {systemd_watchdog_directives}{identity_lines}ExecStart={gateway_entrypoint}{f" {profile_arg}" if profile_arg else ""} gateway run
  WorkingDirectory={working_dir}
  {env_lines}Environment="PATH={sane_path}"

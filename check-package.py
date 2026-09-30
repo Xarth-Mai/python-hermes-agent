@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix="hermes-package-check-") as tmp:
         "HERMES_CRON_DRAIN_TIMEOUT": "",
     }):
         from tools.daemon_pool import DaemonThreadPoolExecutor
-        from hermes_cli import gateway
+        from hermes_cli import gateway, gateway_service_unit
 
         initialized = threading.local()
         with DaemonThreadPoolExecutor(
@@ -63,7 +63,7 @@ with tempfile.TemporaryDirectory(prefix="hermes-package-check-") as tmp:
                     assert f'Environment="HERMES_HOME={home}"\n' in unit
                     assert f"TimeoutStopSec={timeout}\n" in unit
         with patch.object(gateway.shutil, "which", return_value=None):
-            assert gateway._systemd_gateway_entrypoint() == (
+            assert gateway_service_unit._systemd_gateway_entrypoint() == (
                 f"{shlex.quote(gateway.get_python_path())} -m hermes_cli.main"
             )
 print("Package checks passed: daemon workers, bounded exit, system/user units, profiles, stop budgets")

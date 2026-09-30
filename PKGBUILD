@@ -3,8 +3,8 @@
 
 _pkgname=hermes-agent
 pkgname=python-${_pkgname}
-tag=2026.9.14
-pkgver=0.21.3
+tag=2026.9.24
+pkgver=0.21.5
 pkgrel=1
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
@@ -43,18 +43,16 @@ makedepends=('python-installer' 'python-wheel' 'python-build' 'python-setuptools
 options=('!strip' '!debug')
 source=(
     "${url}/archive/refs/tags/v${tag}.tar.gz"
-    "0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
     "0002-use-hermes-wrapper-for-systemd-gateway.patch"
     "0003-fix-systemd-virtualenv-for-arch-package.patch"
     "hermes-wrapper"
     "check-package.py"
 )
-sha256sums=('47df72ebd3f9c96d806a94541163f7fe7d7ce5b84f85c1d3787e6dfeea1d7834'
-            '359e2f5eb1aee238788fe9275ca2cdad8a4c8e1a8fd5455ea0a2f50bbc49df7e'
-            '6ff0763922e445339478c7ed463c7346eafa6687ba01f52c0c72dc126aa69bbe'
-            'faaba621136b9e7b46c2427ae3c2b7499ec319f96e62b775173013df4c1ab063'
+sha256sums=('15b15ce4e6ec8ea424a081823709d1e17f0943e7b42b59597d24ebb94cbd1742'
+            'b86cdf8b016e3d79fb1ef2ec019f656fce3239e45aefb59ef08aebeed8eb6297'
+            'f6813b27ca068bb6d547dee82b1fbcc9dcaed0ad108c6fedefada9b38f5b2467'
             '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9'
-            'ac13d18fce10f4654ad1631a99ba6846087d4892e0f03a6410cb6d84ec05860a')
+            'c1c790efb7163825d61ec590d6712d79a7254ba3dfc908f9fc1cb3119aa1d9a2')
 
 prepare() {
   cd "${srcdir}/hermes-agent-${tag}"
@@ -65,8 +63,6 @@ prepare() {
     -e 's/setuptools>=77.0,<83/setuptools>=77.0/' \
     -e 's/setuptools==83.0.0/setuptools>=77.0/' \
     pyproject.toml
-  # Python 3.14: ThreadPoolExecutor no longer has _initializer/_initargs
-  patch -p1 < "${srcdir}/0001-fix-daemon-pool-py314-ThreadPoolExecutor-API.patch"
   # Use the packaged hermes wrapper for generated systemd units.
   # This preserves HERMES_* runtime asset environment variables.
   patch -p1 < "${srcdir}/0002-use-hermes-wrapper-for-systemd-gateway.patch"

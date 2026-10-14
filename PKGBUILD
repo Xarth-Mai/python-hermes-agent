@@ -5,7 +5,7 @@ _pkgname=hermes-agent
 pkgname=python-${_pkgname}
 tag=0.22.0
 pkgver=0.22.0
-pkgrel=1
+pkgrel=2
 _commit=e06df9c2eae6901f4c88f464e0ae6e753c0428b8
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
@@ -139,7 +139,12 @@ package() {
 
   install -Dm755 "${srcdir}/hermes-wrapper" "${pkgdir}/usr/lib/hermes-agent/hermes-wrapper"
 
+  # Git checkouts inherit the build umask; packaged runtime files are public
+  chmod -R a+rX "${pkgdir}/usr"
+
   # Packaging sanity checks.
+  test -z "$(find "${pkgdir}/usr" -type d ! -perm -0555 -print -quit)"
+  test -z "$(find "${pkgdir}/usr" -type f ! -perm -0444 -print -quit)"
   test -f "${_share}/plugins/platforms/wecom/plugin.yaml"
   test -d "${_share}/locales"
   test -d "${_share}/optional-mcps"

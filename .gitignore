@@ -4,3 +4,4 @@ pkg/
 *.pkg.tar.zst
 *.pkg.tar.xz
 v*.tar.gz
+hermes-agent/

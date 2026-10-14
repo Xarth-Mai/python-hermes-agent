@@ -3,20 +3,22 @@
 
 _pkgname=hermes-agent
 pkgname=python-${_pkgname}
-tag=2026.9.24
-pkgver=0.21.5
+tag=0.22.0
+pkgver=0.22.0
 pkgrel=1
+_commit=e06df9c2eae6901f4c88f464e0ae6e753c0428b8
 pkgdesc="The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 arch=('any')
 url="https://github.com/NousResearch/${_pkgname}"
 license=('MIT')
-depends=('nodejs' 'python>=3.11' 'python-dotenv' 'python-prompt_toolkit' 'python-openai' 'python-fire'
+depends=('nodejs' 'python>=3.14' 'python-dotenv' 'python-prompt_toolkit' 'python-openai' 'python-fire'
           'python-ruamel-yaml' 'python-rich' 'python-pyjwt' 'python-tenacity' 'python-yaml'
           'python-httpx' 'python-socksio' 'python-requests' 'python-jinja' 'python-pydantic' 'python-psutil'
           'python-markdown' 'python-pathspec' 'python-ptyprocess' 'python-snowballstemmer'
-          'python-certifi' 'python-packaging' 'python-urllib3' 'python-websockets'
+          'python-certifi' 'python-truststore' 'python-tomli-w' 'python-packaging' 'python-urllib3' 'python-websockets'
           'python-pillow' 'python-pillow-heif' 'python-multipart' 'python-cryptography'
-          'python-fastapi' 'python-starlette' 'python-croniter' 'uvicorn')
+          'python-fastapi' 'python-starlette' 'python-croniter' 'uvicorn'
+          'python-httptools' 'python-watchfiles')
 optdepends=('python-telegram-bot: Telegram messaging support'
             'python-discord: Discord messaging support (PyPI: discord.py)'
             'python-aiohttp: Async HTTP for messaging/web, QQ bot & Wechat messaging needs this'
@@ -38,43 +40,46 @@ optdepends=('python-telegram-bot: Telegram messaging support'
             'python-asyncpg: PostgreSQL async for Matrix'
             'python-aiohttp-socks: SOCKS proxy for Matrix'
             'python-defusedxml: XML hardening for WeCom')
-makedepends=('python-installer' 'python-wheel' 'python-build' 'python-setuptools' 'npm')
+makedepends=('git' 'python-installer' 'python-wheel' 'python-build' 'python-setuptools' 'npm')
 # Bun / JS bundles and generated assets should not be stripped.
 options=('!strip' '!debug')
 source=(
-    "${url}/archive/refs/tags/v${tag}.tar.gz"
+    "${_pkgname}::git+${url}.git#commit=${_commit}"
     "0002-use-hermes-wrapper-for-systemd-gateway.patch"
-    "0003-fix-systemd-virtualenv-for-arch-package.patch"
+    "0003-preserve-system-python-for-arch-package.patch"
     "hermes-wrapper"
     "check-package.py"
 )
-sha256sums=('15b15ce4e6ec8ea424a081823709d1e17f0943e7b42b59597d24ebb94cbd1742'
-            'b86cdf8b016e3d79fb1ef2ec019f656fce3239e45aefb59ef08aebeed8eb6297'
-            'f6813b27ca068bb6d547dee82b1fbcc9dcaed0ad108c6fedefada9b38f5b2467'
-            '9531986d061e1503395b4261d941a78f48996c48f9c7190cf0787113d07127b9'
-            'c1c790efb7163825d61ec590d6712d79a7254ba3dfc908f9fc1cb3119aa1d9a2')
+sha256sums=('SKIP'
+            '658cf475a1b8a064616136f2c2c659f97a8162ec4294ad8c8df4cfe03a41a6cc'
+            'e433a8ed6b48ae6b7de2772bb797be96db7b0a5d54d45c9e72310bcac633f4ff'
+            '904cd6e09ad691f7fefd90b2e13f03cf7e184917c3924ced34cfca16b9c456f8'
+            'f9a48f9b8463194164bdeeb71230867915232ee0e6d9a13d29f144c936fa2d82')
 
 prepare() {
-  cd "${srcdir}/hermes-agent-${tag}"
+  cd "${srcdir}/${_pkgname}"
   # Arch Linux packaging uses distro setuptools.
   # Relax upstream's setuptools pin so the package can build with
   # the current Arch Python toolchain.
   sed -i \
     -e 's/setuptools>=77.0,<83/setuptools>=77.0/' \
     -e 's/setuptools==83.0.0/setuptools>=77.0/' \
+    -e "s/version = \"0.0.0\"/version = \"${pkgver}\"/" \
     pyproject.toml
   # Use the packaged hermes wrapper for generated systemd units.
   # This preserves HERMES_* runtime asset environment variables.
   patch -p1 < "${srcdir}/0002-use-hermes-wrapper-for-systemd-gateway.patch"
-  # Do not emit a fake VIRTUAL_ENV for non-venv (Arch system Python) installs.
-  patch -p1 < "${srcdir}/0003-fix-systemd-virtualenv-for-arch-package.patch"
+  patch -p1 < "${srcdir}/0003-preserve-system-python-for-arch-package.patch"
 }
 
 build() {
-  cd "${srcdir}/hermes-agent-${tag}"
+  cd "${srcdir}/${_pkgname}"
 
   # Upstream blocks normal wheel builds because runtime assets are not included.
   # We package those assets separately below, matching the upstream Nix layout.
+  GIT_CEILING_DIRECTORIES="${srcdir}" python scripts/write_install_stamp.py --output install-stamp.json \
+    --commit "${_commit}" --branch "v${tag}" --dirty --base-version "${pkgver}" --distance 0 \
+    --source build --update-mechanism external
   HERMES_NIX_BUILD=1 python -m build --wheel --no-isolation --quiet
 
   # Build the dashboard and TUI from the upstream npm workspaces.
@@ -86,12 +91,12 @@ build() {
 }
 
 check() {
-  cd "${srcdir}/hermes-agent-${tag}"
+  cd "${srcdir}/${_pkgname}"
   PYTHONPATH=. python "${srcdir}/check-package.py"
 }
 
 package() {
-  cd "${srcdir}/hermes-agent-${tag}"
+  cd "${srcdir}/${_pkgname}"
 
   python -m installer --destdir="${pkgdir}" --prefix=/usr dist/*.whl
 
@@ -100,6 +105,7 @@ package() {
   local _share="${pkgdir}/usr/share/hermes-agent"
 
   install -d "${_share}"
+  install -m644 install-stamp.json "${_share}/install-stamp.json"
 
   # Runtime assets intentionally omitted from the Python wheel.
   # Keep them under /usr/share and expose them through HERMES_* in the wrapper.

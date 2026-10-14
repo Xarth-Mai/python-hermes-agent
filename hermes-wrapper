@@ -9,6 +9,8 @@ export HERMES_OPTIONAL_MCPS=/usr/share/hermes-agent/optional-mcps
 export HERMES_WEB_DIST=/usr/share/hermes-agent/web_dist
 export HERMES_TUI_DIR=/usr/lib/hermes-agent/ui-tui
 
+export HERMES_INSTALL_ROOT=/usr/share/hermes-agent
+
 export HERMES_PYTHON=/usr/bin/python
 export HERMES_NODE=/usr/bin/node
 

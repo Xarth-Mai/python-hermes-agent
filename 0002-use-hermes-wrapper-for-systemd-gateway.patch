@@ -1,37 +1,12 @@
---- a/hermes_cli/gateway_service_unit.py
-+++ b/hermes_cli/gateway_service_unit.py
-@@ -8,6 +8,7 @@
-
- import logging
- import os
-+import shlex
- import shutil
- import sys
- from pathlib import Path
-@@ -152,8 +153,17 @@
-     return str(detected_venv) if detected_venv else str(_gw().PROJECT_ROOT / "venv")
-
- 
-+def _systemd_gateway_entrypoint() -> str:
-+    """Use the installed wrapper to load packaged runtime assets"""
-+    hermes_binary = shutil.which("hermes")
-+    if hermes_binary:
-+        return shlex.quote(hermes_binary)
-+    return f"{shlex.quote(_gw().get_python_path())} -m hermes_cli.main"
-+
-+
- def generate_systemd_unit(system: bool = False, run_as_user: str | None = None) -> str:
-     python_path = _gw().get_python_path()
-+    gateway_entrypoint = _systemd_gateway_entrypoint()
-     working_dir = _gw()._stable_service_working_dir()
-     venv_dir = _gw()._service_venv_dir()
-
-@@ -220,7 +230,7 @@
-
- [Service]
- Type={systemd_type}
--{systemd_watchdog_directives}{identity_lines}ExecStart={python_path} -m hermes_cli.main{f" {profile_arg}" if profile_arg else ""} gateway run
-+{systemd_watchdog_directives}{identity_lines}ExecStart={gateway_entrypoint}{f" {profile_arg}" if profile_arg else ""} gateway run
- WorkingDirectory={working_dir}
- {env_lines}Environment="PATH={sane_path}"
- Environment="VIRTUAL_ENV={venv_dir}"
+--- a/hermes_cli/gateway.py
++++ b/hermes_cli/gateway.py
+@@ -3315,8 +3315,7 @@
+     path_entries.extend(_build_wsl_interop_paths(path_entries))
+     path_entries.extend(["/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin", "/sbin", "/bin"])
+     sane_path = ":".join(path_entries)
+-    start = installation_command(project_root, [*shlex.split(profile_arg), "gateway", "run"],
+-                            python=python_path, home=hermes_home)
++    start = ["/usr/bin/hermes", *shlex.split(profile_arg), "gateway", "run"]
+     cleanup = installation_command(project_root, module="gateway.cgroup_cleanup",
+                               python=python_path, home=hermes_home)
+     stop_mark = installation_command(project_root, module="gateway.systemd_stop_mark",
